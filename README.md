@@ -26,7 +26,8 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\act
 pip install -r requirements.txt
 
 cp .env.example .env        # then set SECRET_KEY + DATABASE_URL / POSTGRES_PASSWORD
-python scripts/init_admins.py                    # creates the 3 admin accounts
+python scripts/init_admins.py                    # creates the 3 default admin accounts
+# extra admins: set ADMIN4_EMAIL/ADMIN4_USERNAME/ADMIN4_PASSWORD in .env, then rerun
 python scripts/seed_demo.py --admin-email admin1@workcode.local   # optional demo data
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```

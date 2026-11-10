@@ -44,7 +44,7 @@ Tokens: access 30 min, refresh 7 days (both configurable). Refresh tokens are si
 | GET | `/admin/users/{id}/activity?days=` | Tasks, attendance, recordings, sessions, audit for one person |
 | GET | `/admin/progress` | Per-employee completion rate, hours, avg progress |
 | GET | `/admin/audit-logs?scope=auto\|mine\|all` | Audit trail honouring `AUDIT_VISIBILITY` |
-| GET | `/admin/admins` | The three admin slots + action counts |
+| GET | `/admin/admins` | Admin slots + action counts |
 | GET | `/admin/settings` | Effective platform configuration |
 
 ## Tasks

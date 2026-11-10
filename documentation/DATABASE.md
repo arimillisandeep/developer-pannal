@@ -19,7 +19,7 @@ WORKCODE uses the existing PostgreSQL database configured by DATABASE_URL. Do no
 |---|---|---|
 | `users` | `id, email UQ, username UQ, password_hash, role, is_active` | role ∈ admin / developer_onroll / developer_offroll / intern |
 | `roles` | `name UQ` | reference list of the four roles |
-| `admin_accounts` | `user_id UQ, admin_slot UQ (1-3)` | exactly three admins, each with their own login |
+| `admin_accounts` | `user_id UQ, admin_slot UQ (1-3 default, 4+ for extra admins)` | three admins by default, each with their own login; extra slots via `.env` |
 | `employee_profiles` | `user_id UQ, employee_code UQ, team_id, joining_date, expected_end_date, employment_status` | six-month window for off-roll/intern |
 | `employment_history` | `user_id, event, from_role, to_role, effective_date, approved_by` | append-only conversion record |
 | `teams` | `name UQ, lead_user_id` | |

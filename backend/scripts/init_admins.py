@@ -1,7 +1,11 @@
-"""Create the three WORKCODE admin accounts.
+"""Create the WORKCODE admin accounts.
+
+Slots 1-3 are the three default platform admins. Extra admins are supported by
+setting ADMIN4_EMAIL/ADMIN4_USERNAME/ADMIN4_NAME/ADMIN4_PASSWORD (and so on) —
+the slot count is extended automatically to cover the highest configured slot.
 
 Passwords are NEVER hardcoded. Priority order for each admin:
-  1. ADMINn_PASSWORD environment variable
+  1. ADMINn_PASSWORD environment variable (backend/.env is loaded automatically)
   2. --password-n CLI flag
   3. a cryptographically random password, printed ONCE to the terminal
 
@@ -19,13 +23,26 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from dotenv import load_dotenv  # noqa: E402
 from sqlalchemy import select  # noqa: E402
+
+# Load backend/.env before reading ADMINn_* vars; os.getenv alone ignores the file.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from app.core.db import SessionLocal, init_db  # noqa: E402
 from app.core.security import hash_password, password_strength_error  # noqa: E402
 from app.models import AdminAccount, User  # noqa: E402
 
-ADMIN_SLOTS = 3
+DEFAULT_SLOTS = 3
+
+
+def configured_slots() -> int:
+    """Number of admin slots to process: at least the default three, more if configured."""
+    highest = 0
+    for slot in range(1, 100):
+        if any(os.getenv(f"ADMIN{slot}_{field}") for field in ("EMAIL", "USERNAME", "PASSWORD")):
+            highest = slot
+    return max(DEFAULT_SLOTS, highest)
 COLORS = ["#4f8cff", "#22c55e", "#a855f7"]
 
 
@@ -38,8 +55,9 @@ def random_password(length: int = 16) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Create the three WORKCODE admin accounts")
-    for i in range(1, ADMIN_SLOTS + 1):
+    slots = configured_slots()
+    parser = argparse.ArgumentParser(description="Create the WORKCODE admin accounts")
+    for i in range(1, slots + 1):
         parser.add_argument(f"--password-{i}", dest=f"password_{i}", default=None)
     args = parser.parse_args()
 
@@ -47,7 +65,7 @@ def main() -> int:
     db = SessionLocal()
     created = []
     try:
-        for slot in range(1, ADMIN_SLOTS + 1):
+        for slot in range(1, slots + 1):
             email = os.getenv(f"ADMIN{slot}_EMAIL", f"admin{slot}@workcode.local").lower()
             username = os.getenv(f"ADMIN{slot}_USERNAME", f"admin{slot}").lower()
             full_name = os.getenv(f"ADMIN{slot}_NAME", f"Platform Admin {slot}")
@@ -56,8 +74,8 @@ def main() -> int:
             if any(u.email == email for u in existing):
                 print(f"[skip] admin slot {slot}: {email} already exists")
                 continue
-            if len(existing) >= ADMIN_SLOTS:
-                print(f"[skip] admin slot {slot}: already {ADMIN_SLOTS} admins exist")
+            if len(existing) >= slots:
+                print(f"[skip] admin slot {slot}: already {slots} admins exist")
                 continue
 
             pwd = getattr(args, f"password_{slot}") or os.getenv(f"ADMIN{slot}_PASSWORD")
@@ -74,7 +92,7 @@ def main() -> int:
             user = User(
                 email=email, username=username, full_name=full_name,
                 role="admin", password_hash=hash_password(pwd),
-                designation="Platform Administrator", avatar_color=COLORS[slot - 1],
+                designation="Platform Administrator", avatar_color=COLORS[(slot - 1) % len(COLORS)],
             )
             db.add(user)
             db.flush()

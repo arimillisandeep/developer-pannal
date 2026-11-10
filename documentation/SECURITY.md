@@ -103,4 +103,4 @@ Examples: `auth.login`, `user.created`, `employee.converted`, `task.created`,
 - [ ] SMTP wired for password-reset emails
 - [ ] Retention purge job scheduled
 - [ ] Log shipping / error monitoring configured
-- [ ] Rotate the three admin passwords after first login
+- [ ] Rotate the admin passwords after first login

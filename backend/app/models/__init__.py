@@ -60,7 +60,7 @@ class AdminAccount(Base):
     __tablename__ = "admin_accounts"
     id = Column(String(36), primary_key=True, default=uid)
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    admin_slot = Column(Integer, unique=True, nullable=False)  # 1, 2, 3
+    admin_slot = Column(Integer, unique=True, nullable=False)  # 1-3 default, 4+ extra admins
     title = Column(String(120), default="Platform Administrator")
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     user = relationship("User", back_populates="admin_account")
