@@ -1,0 +1,6 @@
+# Sandbox runner image for Python. Build per language you enable.
+# Image name must match DOCKER_IMAGE_PREFIX: workcode-runner-python
+FROM python:3.12-alpine
+RUN adduser -D -u 65534 sandbox 2>/dev/null || true
+WORKDIR /work
+USER 65534:65534

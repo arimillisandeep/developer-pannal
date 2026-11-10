@@ -1,0 +1,94 @@
+.ide-recording-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ide-recording-control > .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 64px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #31405a;
+  border-radius: 8px;
+  background: #131b2b;
+  color: #e5edf9;
+  font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ide-recording-control > .icon-btn:hover { background: #1b2940; }
+.ide-recording-control > .icon-btn:disabled { opacity: .6; cursor: wait; }
+.ide-recording-control > .ide-recording-status { color: #ff8b8b; font-size: 12px; white-space: nowrap; }
+
+.ide-recording-control .ide-local-recordings {
+  position: absolute;
+  z-index: 300;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(380px, 90vw);
+  max-height: 70vh;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid #31405a;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5edf9;
+  box-shadow: 0 12px 32px #0009;
+  white-space: normal;
+}
+
+.ide-recording-control .ide-local-recordings > .between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ide-recording-control .ide-local-recordings > .between > .icon-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ide-recording-control .ide-local-recording {
+  display: grid;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid #28364b;
+}
+
+.ide-recording-prompt {
+  position: absolute;
+  z-index: 310;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(390px, calc(100vw - 32px));
+  padding: 14px;
+  border: 1px solid #31405a;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5edf9;
+  box-shadow: 0 12px 32px #0009;
+  white-space: normal;
+}
+
+.ide-recording-prompt p { margin: 8px 0; color: #b8c7dc; font-size: 12px; line-height: 1.5; }
+.ide-recording-prompt .secure-warning { color: #ffb4a9; }
+.ide-recording-prompt-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+@media (max-width: 760px) {
+  .ide-recording-control { gap: 4px; }
+  .ide-recording-control > .icon-btn { min-width: 54px; padding: 0 7px; font-size: 12px; }
+}

@@ -1,0 +1,30 @@
+# Local configuration and credentials
+backend/.env
+backend/credentials.json
+backend/token.json
+
+# Local data and Python environments
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+backend/storage/
+storage/
+backend/.venv/
+.venv311/
+**/.venv/
+**/.venv311/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+# Frontend dependencies and generated output
+frontend/node_modules/
+frontend/dist/
+
+# Local editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,398 @@
+{
+  "info": {
+    "name": "WORKCODE API",
+    "description": "Developer management, tasks, code review, timer, recordings, chat, meetings.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:8000/api" }
+  ],
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{ACCESS_TOKEN}}", "type": "string" }] },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('response time under 3s', () => pm.expect(pm.response.responseTime).to.be.below(3000));",
+          "pm.test('has JSON body', () => pm.response.headers.get('content-type').includes('json'));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 · Authentication",
+      "item": [
+        {
+          "name": "Login as admin",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('returns tokens', () => { pm.expect(j.access_token).to.be.a('string'); pm.expect(j.refresh_token).to.be.a('string'); });",
+            "pm.test('redirects admin', () => pm.expect(j.redirect_to).to.eql('/admin'));",
+            "pm.collectionVariables.set('ACCESS_TOKEN', j.access_token);",
+            "pm.collectionVariables.set('REFRESH_TOKEN', j.refresh_token);",
+            "pm.collectionVariables.set('USER_ID', j.user.id);"
+          ] } }],
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/auth/login", "host": ["{{BASE_URL}}"], "path": ["auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"admin1@workcode.local\",\n  \"password\": \"YOUR_ADMIN_PASSWORD\"\n}" },
+            "auth": { "type": "noauth" }
+          }
+        },
+        {
+          "name": "Login — wrong password (401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": {
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/auth/login", "host": ["{{BASE_URL}}"], "path": ["auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"identifier\": \"admin1@workcode.local\",\n  \"password\": \"definitely-wrong\"\n}" },
+            "auth": { "type": "noauth" }
+          }
+        },
+        {
+          "name": "Me",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('role is admin', () => pm.expect(pm.response.json().role).to.eql('admin'));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/auth/me", "host": ["{{BASE_URL}}"], "path": ["auth", "me"] } }
+        },
+        {
+          "name": "Me — no token (401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('401 without token', () => pm.response.to.have.status(401));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "auth": { "type": "noauth" },
+            "url": { "raw": "{{BASE_URL}}/auth/me", "host": ["{{BASE_URL}}"], "path": ["auth", "me"] } }
+        },
+        {
+          "name": "Refresh token",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('ACCESS_TOKEN', j.access_token);",
+            "pm.collectionVariables.set('REFRESH_TOKEN', j.refresh_token);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "url": { "raw": "{{BASE_URL}}/auth/refresh", "host": ["{{BASE_URL}}"], "path": ["auth", "refresh"] },
+            "body": { "mode": "raw", "raw": "{\n  \"refresh_token\": \"{{REFRESH_TOKEN}}\"\n}" } }
+        },
+        {
+          "name": "Forgot password",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('always 200 (no enumeration)', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "noauth" },
+            "url": { "raw": "{{BASE_URL}}/auth/forgot-password", "host": ["{{BASE_URL}}"], "path": ["auth", "forgot-password"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"intern@workcode.local\"\n}" } }
+        }
+      ]
+    },
+    {
+      "name": "02 · Admin",
+      "item": [
+        {
+          "name": "Dashboard",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('has totals', () => pm.expect(pm.response.json()).to.have.property('totals'));",
+            "pm.test('has tasks block', () => pm.expect(pm.response.json()).to.have.property('tasks'));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/admin/dashboard", "host": ["{{BASE_URL}}"], "path": ["admin", "dashboard"] } }
+        },
+        {
+          "name": "Audit logs — permission test (non-admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('403 for non-admin', () => pm.response.to.have.status(403));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{INTERN_TOKEN}}" }] },
+            "url": { "raw": "{{BASE_URL}}/admin/audit-logs", "host": ["{{BASE_URL}}"], "path": ["admin", "audit-logs"] } }
+        },
+        {
+          "name": "Audit logs — all admins",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('has items', () => pm.expect(pm.response.json()).to.have.property('items'));"
+          ] } }],
+          "request": { "method": "GET", "header": [],
+            "url": { "raw": "{{BASE_URL}}/admin/audit-logs?scope=all&size=50", "host": ["{{BASE_URL}}"], "path": ["admin", "audit-logs"],
+              "query": [{ "key": "scope", "value": "all" }, { "key": "size", "value": "50" }] } }
+        },
+        {
+          "name": "Employee progress",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/admin/progress", "host": ["{{BASE_URL}}"], "path": ["admin", "progress"] } }
+        },
+        {
+          "name": "Settings",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/admin/settings", "host": ["{{BASE_URL}}"], "path": ["admin", "settings"] } }
+        }
+      ]
+    },
+    {
+      "name": "03 · Users",
+      "item": [
+        {
+          "name": "List users",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/users?size=50", "host": ["{{BASE_URL}}"], "path": ["users"],
+            "query": [{ "key": "size", "value": "50" }] } }
+        },
+        {
+          "name": "Create intern",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('NEW_USER_ID', pm.response.json().id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/users", "host": ["{{BASE_URL}}"], "path": ["users"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"postman.intern@workcode.local\",\n  \"username\": \"postman_intern\",\n  \"full_name\": \"Postman Intern\",\n  \"password\": \"PostmanPass123\",\n  \"role\": \"intern\",\n  \"period_months\": 6\n}" } }
+        },
+        {
+          "name": "Create user — duplicate (409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('409 Conflict', () => pm.response.to.have.status(409));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/users", "host": ["{{BASE_URL}}"], "path": ["users"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"postman.intern@workcode.local\",\n  \"username\": \"postman_intern\",\n  \"full_name\": \"Postman Intern\",\n  \"password\": \"PostmanPass123\",\n  \"role\": \"intern\"\n}" } }
+        },
+        {
+          "name": "Convert intern → on-roll",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('role converted', () => pm.expect(pm.response.json().role).to.eql('developer_onroll'));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/users/{{NEW_USER_ID}}/convert", "host": ["{{BASE_URL}}"], "path": ["users", "{{NEW_USER_ID}}", "convert"] },
+            "body": { "mode": "raw", "raw": "{\n  \"to_role\": \"developer_onroll\",\n  \"notes\": \"Postman test\"\n}" } }
+        }
+      ]
+    },
+    {
+      "name": "04 · Tasks",
+      "item": [
+        {
+          "name": "Create task",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "pm.test('code generated', () => pm.expect(j.code).to.match(/^WC-\\d{4}$/));",
+            "pm.collectionVariables.set('TASK_ID', j.id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/tasks", "host": ["{{BASE_URL}}"], "path": ["tasks"] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Postman created task\",\n  \"description\": \"Created by the API test collection\",\n  \"assignee_id\": \"{{NEW_USER_ID}}\",\n  \"priority\": \"high\",\n  \"due_date\": \"2027-06-30\"\n}" } }
+        },
+        {
+          "name": "List tasks",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/tasks", "host": ["{{BASE_URL}}"], "path": ["tasks"] } }
+        },
+        {
+          "name": "Task — invalid payload (422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('422 Validation error', () => pm.response.to.have.status(422));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/tasks", "host": ["{{BASE_URL}}"], "path": ["tasks"] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"\"\n}" } }
+        },
+        {
+          "name": "Comment on task",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/tasks/{{TASK_ID}}/comments", "host": ["{{BASE_URL}}"], "path": ["tasks", "{{TASK_ID}}", "comments"] },
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Kick-off note from Postman\"\n}" } }
+        }
+      ]
+    },
+    {
+      "name": "05 · Projects & workspace",
+      "item": [
+        {
+          "name": "Create project",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('PROJECT_ID', pm.response.json().id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/projects", "host": ["{{BASE_URL}}"], "path": ["projects"] },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman Project\",\n  \"language\": \"python\"\n}" } }
+        },
+        {
+          "name": "Save files",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('version bumped', () => pm.expect(pm.response.json().current_version).to.be.above(1));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/projects/{{PROJECT_ID}}/save", "host": ["{{BASE_URL}}"], "path": ["projects", "{{PROJECT_ID}}", "save"] },
+            "body": { "mode": "raw", "raw": "{\n  \"files\": [{\"path\": \"main.py\", \"content\": \"print('hello from postman')\"}],\n  \"label\": \"postman save\"\n}" } }
+        },
+        {
+          "name": "Path traversal blocked (422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('422 rejected', () => pm.response.to.have.status(422));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/projects/{{PROJECT_ID}}/files", "host": ["{{BASE_URL}}"], "path": ["projects", "{{PROJECT_ID}}", "files"] },
+            "body": { "mode": "raw", "raw": "{\n  \"path\": \"../../etc/passwd\",\n  \"content\": \"nope\"\n}" } }
+        },
+        {
+          "name": "Run python",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('execution succeeded', () => pm.expect(pm.response.json().ok).to.eql(true));",
+            "pm.test('printed 4', () => pm.expect(pm.response.json().stdout).to.include('4'));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/workspace/run", "host": ["{{BASE_URL}}"], "path": ["workspace", "run"] },
+            "body": { "mode": "raw", "raw": "{\n  \"language\": \"python\",\n  \"code\": \"print(2+2)\"\n}" } }
+        },
+        {
+          "name": "Languages",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/workspace/languages", "host": ["{{BASE_URL}}"], "path": ["workspace", "languages"] } }
+        }
+      ]
+    },
+    {
+      "name": "06 · Submissions",
+      "item": [
+        {
+          "name": "Submit code",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('SUBMISSION_ID', pm.response.json().id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/submissions", "host": ["{{BASE_URL}}"], "path": ["submissions"] },
+            "body": { "mode": "raw", "raw": "{\n  \"task_id\": \"{{TASK_ID}}\",\n  \"project_id\": \"{{PROJECT_ID}}\",\n  \"notes\": \"Ready for review\"\n}" } }
+        },
+        {
+          "name": "Review submission",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('status recorded', () => pm.expect(pm.response.json()).to.have.property('status'));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/submissions/{{SUBMISSION_ID}}/review", "host": ["{{BASE_URL}}"], "path": ["submissions", "{{SUBMISSION_ID}}", "review"] },
+            "body": { "mode": "raw", "raw": "{\n  \"decision\": \"approved\",\n  \"comments\": \"Looks good\"\n}" } }
+        },
+        {
+          "name": "Submission detail",
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/submissions/{{SUBMISSION_ID}}", "host": ["{{BASE_URL}}"], "path": ["submissions", "{{SUBMISSION_ID}}"] } }
+        }
+      ]
+    },
+    {
+      "name": "07 · Timer",
+      "item": [
+        { "name": "Start", "request": { "method": "POST", "header": [], "url": { "raw": "{{BASE_URL}}/timer/start", "host": ["{{BASE_URL}}"], "path": ["timer", "start"] } } },
+        {
+          "name": "Heartbeat",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/timer/heartbeat", "host": ["{{BASE_URL}}"], "path": ["timer", "heartbeat"] },
+            "body": { "mode": "raw", "raw": "{\n  \"event\": \"heartbeat\",\n  \"meta\": {}\n}" } }
+        },
+        { "name": "Pause", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "url": { "raw": "{{BASE_URL}}/timer/pause", "host": ["{{BASE_URL}}"], "path": ["timer", "pause"] }, "body": { "mode": "raw", "raw": "{\"event\": \"pause\"}" } } },
+        { "name": "Resume", "request": { "method": "POST", "header": [], "url": { "raw": "{{BASE_URL}}/timer/resume", "host": ["{{BASE_URL}}"], "path": ["timer", "resume"] } } },
+        { "name": "Stop", "request": { "method": "POST", "header": [], "url": { "raw": "{{BASE_URL}}/timer/stop", "host": ["{{BASE_URL}}"], "path": ["timer", "stop"] } } },
+        { "name": "Attendance", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/timer/attendance", "host": ["{{BASE_URL}}"], "path": ["timer", "attendance"] } } },
+        {
+          "name": "Timer as admin (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('admin has no timer', () => pm.response.to.have.status(403));"
+          ] } }],
+          "request": { "method": "POST", "header": [], "url": { "raw": "{{BASE_URL}}/timer/start", "host": ["{{BASE_URL}}"], "path": ["timer", "start"] } }
+        }
+      ]
+    },
+    {
+      "name": "08 · Recordings",
+      "item": [
+        {
+          "name": "Start recording — no consent (422)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('422 consent required', () => pm.response.to.have.status(422));"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/recordings/start", "host": ["{{BASE_URL}}"], "path": ["recordings", "start"] },
+            "body": { "mode": "raw", "raw": "{\n  \"consent\": false\n}" } }
+        },
+        {
+          "name": "Start recording — with consent",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('RECORDING_ID', pm.response.json().id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/recordings/start", "host": ["{{BASE_URL}}"], "path": ["recordings", "start"] },
+            "body": { "mode": "raw", "raw": "{\n  \"consent\": true,\n  \"mime_type\": \"video/webm\"\n}" } }
+        },
+        { "name": "List recordings", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/recordings", "host": ["{{BASE_URL}}"], "path": ["recordings"] } } }
+      ]
+    },
+    {
+      "name": "09 · Chat & notifications",
+      "item": [
+        { "name": "Contacts", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/chat/contacts", "host": ["{{BASE_URL}}"], "path": ["chat", "contacts"] } } },
+        { "name": "Rooms", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/chat/rooms", "host": ["{{BASE_URL}}"], "path": ["chat", "rooms"] } } },
+        {
+          "name": "Create direct room",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 or 200', () => pm.expect([200, 201]).to.include(pm.response.code));",
+            "pm.collectionVariables.set('ROOM_ID', pm.response.json().id);"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/chat/rooms", "host": ["{{BASE_URL}}"], "path": ["chat", "rooms"] },
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"direct\",\n  \"participant_ids\": [\"{{NEW_USER_ID}}\"]\n}" } }
+        },
+        {
+          "name": "Send message",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/chat/rooms/{{ROOM_ID}}/messages", "host": ["{{BASE_URL}}"], "path": ["chat", "rooms", "{{ROOM_ID}}", "messages"] },
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Hello from Postman\"\n}" } }
+        },
+        { "name": "Message history", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/chat/rooms/{{ROOM_ID}}/messages", "host": ["{{BASE_URL}}"], "path": ["chat", "rooms", "{{ROOM_ID}}", "messages"] } } },
+        { "name": "Notifications", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/notifications", "host": ["{{BASE_URL}}"], "path": ["notifications"] } } },
+        { "name": "Unread count", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/notifications/unread-count", "host": ["{{BASE_URL}}"], "path": ["notifications", "unread-count"] } } }
+      ]
+    },
+    {
+      "name": "10 · Meetings & reports",
+      "item": [
+        {
+          "name": "Create meeting (no Google → honest draft)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('MEETING_ID', pm.response.json().id);",
+            "pm.test('never a fake meet link', () => { const j = pm.response.json(); pm.expect(j.meet_url === null || typeof j.meet_url === 'string').to.eql(true); });"
+          ] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/meetings", "host": ["{{BASE_URL}}"], "path": ["meetings"] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Postman sync\",\n  \"agenda\": \"API test meeting\",\n  \"starts_at\": \"2027-03-01T10:00:00Z\",\n  \"ends_at\": \"2027-03-01T11:00:00Z\",\n  \"participant_ids\": [],\n  \"create_meet_link\": true\n}" } }
+        },
+        { "name": "List meetings", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/meetings", "host": ["{{BASE_URL}}"], "path": ["meetings"] } } },
+        { "name": "Report summary", "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/reports/summary", "host": ["{{BASE_URL}}"], "path": ["reports", "summary"] } } },
+        {
+          "name": "Export tasks CSV",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('is CSV', () => pm.expect(pm.response.text()).to.include('code,title'));"
+          ] } }],
+          "request": { "method": "GET", "header": [], "url": { "raw": "{{BASE_URL}}/reports/export/tasks", "host": ["{{BASE_URL}}"], "path": ["reports", "export", "tasks"] } }
+        },
+        { "name": "Health", "request": { "method": "GET", "header": [], "auth": { "type": "noauth" },
+          "url": { "raw": "{{BASE_URL}}/health", "host": ["{{BASE_URL}}"], "path": ["health"] } } }
+      ]
+    }
+  ]
+}

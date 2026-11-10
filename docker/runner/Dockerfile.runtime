@@ -1,0 +1,8 @@
+# Thin, locally tagged alias for each supported language runtime.
+# The image itself remains an official language runtime; submitted code is still
+# mounted only into the isolated, network-disabled container at execution time.
+ARG RUNNER_BASE_IMAGE=python:3.12-alpine
+FROM ${RUNNER_BASE_IMAGE}
+ARG RUNNER_LANGUAGE=unknown
+LABEL org.workcode.runner.language=${RUNNER_LANGUAGE}
+WORKDIR /work
