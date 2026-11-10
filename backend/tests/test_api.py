@@ -139,6 +139,10 @@ def test_code_execution_returns_docker_output_and_limits(client, dev_token, monk
         return subprocess.CompletedProcess(argv, 0, stdout="4\n", stderr="")
 
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    # The image-bootstrap step probes the real Docker engine first, so on a machine without
+    # Docker it never reaches the stubbed `docker run`. Report the engine as ready; the
+    # hardened argv is what this test is actually asserting.
+    monkeypatch.setattr(runner, "_docker_engine_ready", lambda: (True, ""))
     with patch_settings(settings, "RUNNER_MODE", "docker"):
         response = client.post("/api/workspace/run", headers=auth(dev_token),
                                json={"language": "python", "code": "print(2+2)"})

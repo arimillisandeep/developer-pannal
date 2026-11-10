@@ -1,11 +1,16 @@
 """Central configuration. Every secret comes from environment variables."""
+import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parents[2]  # .../backend
+
+# Private storage lives at backend/storage. It is overridable via STORAGE_ROOT so the
+# same tree works unchanged when the API runs from a container (e.g. /app/storage).
+DEFAULT_STORAGE_ROOT = Path(os.getenv("STORAGE_ROOT") or (BASE_DIR / "storage"))
 
 
 class Settings(BaseSettings):
@@ -36,8 +41,17 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     # --- storage --------------------------------------------------
-    STORAGE_ROOT: str = str(BASE_DIR / "storage")
+    STORAGE_ROOT: str = str(DEFAULT_STORAGE_ROOT)
     MAX_UPLOAD_MB: int = 50
+
+    @field_validator("STORAGE_ROOT", mode="after")
+    @classmethod
+    def resolve_storage_root(cls, value: str) -> str:
+        """Anchor a relative STORAGE_ROOT to backend/ so it is cwd-independent."""
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = BASE_DIR / path
+        return str(path.resolve())
 
     # --- code execution sandbox ----------------------------------
     RUNNER_MODE: str = "docker"       # untrusted execution requires Docker isolation
